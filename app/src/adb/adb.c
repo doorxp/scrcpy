@@ -346,6 +346,16 @@ sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
 #endif
 
     assert(serial);
+    
+    size_t len = strlen(remote);
+    if(len > 0 && remote[len - 1] == '/') {
+        const char *const argv2[] =
+        SC_ADB_COMMAND("-s", serial, "shell", "mkdir",remote);
+        sc_pid pid2 = sc_adb_execute(argv2, flags);
+        process_check_success_intr(intr, pid2, "adb shell", flags);
+    }
+
+  
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "push", local, remote);
 
@@ -366,8 +376,8 @@ sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
                     "\"file://%s/%s\"", remote, filename);
         const char *const argv1[] =
         SC_ADB_COMMAND("-s", serial, "shell", "am", "broadcast", "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE", "-d", target_path);
-        sc_pid pid = sc_adb_execute(argv1, flags);
-        process_check_success_intr(intr, pid, "media scan", flags);
+        sc_pid pid1 = sc_adb_execute(argv1, flags);
+        process_check_success_intr(intr, pid1, "media scan", flags);
     }
 
 #ifdef _WIN32
