@@ -351,12 +351,31 @@ sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
 
     sc_pid pid = sc_adb_execute(argv, flags);
 
+
+
+    bool ret = process_check_success_intr(intr, pid, "adb push", flags);
+    if (ret && strcmp(remote, "/sdcard/Pictures") > 0) {
+        const char *filename = strrchr(local, '/');
+        if (!filename) {
+            filename = strrchr(local, '\\');
+        }
+        filename = filename ? filename + 1 : local;
+
+        char target_path[512];
+        snprintf(target_path, sizeof(target_path), 
+                    "\"file://%s/%s\"", remote, filename);
+        const char *const argv1[] =
+        SC_ADB_COMMAND("-s", serial, "shell", "am", "broadcast", "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE", "-d", target_path);
+        sc_pid pid = sc_adb_execute(argv1, flags);
+        process_check_success_intr(intr, pid, "media scan", flags);
+    }
+
 #ifdef _WIN32
     free((void *) remote);
     free((void *) local);
 #endif
 
-    return process_check_success_intr(intr, pid, "adb push", flags);
+    return ret;
 }
 
 bool
